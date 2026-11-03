@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: parkovani-mariadb
+  namespace: parkovani
+spec:
+  selector:
+    app: parkovani-mariadb
+  ports:
+    - port: 3306
+      targetPort: 3306

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-config
+  namespace: logging
+data:
+  elasticsearch.yml: |
+    cluster.name: elasticsearch
+    network.host: 0.0.0.0
+    xpack.security.enabled: true
+    xpack.security.authc.api_key.enabled: true
+    discovery.type: single-node

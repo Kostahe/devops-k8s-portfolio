@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parkovani-app
+  namespace: parkovani
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: parkovani-app
+  template:
+    metadata:
+      labels:
+        app: parkovani-app
+    spec:
+      initContainers:
+        - name: copy-app
+          image: kostah/parkovani-php:1.0.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp -a /var/www/html/. /shared/
+              mkdir -p /shared/var/cache /shared/var/log
+              chmod -R 777 /shared/var
+          volumeMounts:
+            - name: shared-code
+              mountPath: /shared
+      containers:
+        - name: nginx
+          image: nginx:1.29.7-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: shared-code
+              mountPath: /var/www/html
+        - name: php
+          image: kostah/parkovani-php:1.0.0
+          ports:
+            - containerPort: 9000
+          env:
+            - name: APP_ENV
+              valueFrom:
+                secretKeyRef:
+                  name: parkovani-secret
+                  key: APP_ENV
+            - name: APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: parkovani-secret
+                  key: APP_SECRET
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: parkovani-secret
+                  key: DATABASE_URL
+          volumeMounts:
+            - name: shared-code
+              mountPath: /var/www/html
+      volumes:
+        - name: shared-code
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: parkovani-nginx-config

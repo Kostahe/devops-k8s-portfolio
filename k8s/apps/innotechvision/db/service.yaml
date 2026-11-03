@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: innotechvision-mariadb
+  namespace: innotechvision
+spec:
+  selector:
+    app: innotechvision-mariadb
+  ports:
+    - port: 3306
+      targetPort: 3306

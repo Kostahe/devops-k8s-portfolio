@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gitlab-runner
+description: GitLab Runner for Kubernetes CI/CD jobs
+type: application
+version: 0.1.0
+appVersion: "13.12.0"

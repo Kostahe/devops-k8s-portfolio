@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gitlab-runner.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "gitlab-runner.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "gitlab-runner.name" . }}
+    spec:
+      serviceAccountName: {{ include "gitlab-runner.serviceAccountName" . }}
+      containers:
+        - name: gitlab-runner
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sed "s|__RUNNER_TOKEN__|${RUNNER_TOKEN}|g" /config-template/config.toml.tpl > /etc/gitlab-runner/config.toml
+              exec gitlab-runner run --config /etc/gitlab-runner/config.toml --working-directory /home/gitlab-runner
+          env:
+            - name: RUNNER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "gitlab-runner.name" . }}-secret
+                  key: runner-token
+          ports:
+            - name: metrics
+              containerPort: 9252
+          readinessProbe:
+            tcpSocket:
+              port: 9252
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+            - name: config-template
+              mountPath: /config-template
+              readOnly: true
+            - name: config
+              mountPath: /etc/gitlab-runner
+      volumes:
+        - name: config-template
+          configMap:
+            name: {{ include "gitlab-runner.name" . }}-config
+        - name: config
+          emptyDir: {}

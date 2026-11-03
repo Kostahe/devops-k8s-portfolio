@@ -1,0 +1,13 @@
+# Local environment and credentials
+.env
+*.env
+*.key
+*.pem
+*.crt
+kubeconfig
+*secret.yaml
+secrets/
+
+# IDE configs
+.idea/
+.vscode/

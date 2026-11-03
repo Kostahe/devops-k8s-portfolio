@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: parkovani-app
+  namespace: parkovani
+spec:
+  selector:
+    app: parkovani-app
+  ports:
+    - port: 80
+      targetPort: 80

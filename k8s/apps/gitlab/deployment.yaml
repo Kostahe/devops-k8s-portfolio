@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: gitlab
+  labels:
+    app: gitlab
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 1800
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: gitlab
+          image: gitlab/gitlab-ce:17.11.7-ce.0
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+            - containerPort: 22
+          volumeMounts:
+            - name: gitlab-storage
+              mountPath: /var/opt/gitlab
+              subPath: data
+            - name: gitlab-storage
+              mountPath: /etc/gitlab
+              subPath: config
+            - name: gitlab-storage
+              mountPath: /var/log/gitlab
+              subPath: logs
+          env:
+            - name: GITLAB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gitlab-root
+                  key: password
+            - name: GITLAB_OMNIBUS_CONFIG
+              value: |
+                external_url 'http://gitlab.example.local'
+                nginx['listen_port'] = 80
+                nginx['listen_https'] = false
+                # povolení Prometheus metrik
+                gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
+          startupProbe:
+            httpGet:
+              path: /-/readiness
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet:
+              path: /-/readiness
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /-/liveness
+              port: 80
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: "4"
+              memory: "8Gi"
+            limits:
+              cpu: "8"
+              memory: "14Gi"
+      volumes:
+        - name: gitlab-storage
+          persistentVolumeClaim:
+            claimName: gitlab-pvc

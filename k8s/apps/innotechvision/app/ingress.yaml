@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: innotechvision-ingress
+  namespace: innotechvision
+spec:
+  ingressClassName: public
+  rules:
+    - host: innotechvision.example.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: innotechvision-app
+                port:
+                  number: 80

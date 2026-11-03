@@ -1,0 +1,37 @@
+replicaCount: 1
+
+image:
+  repository: gitlab/gitlab-runner
+  tag: v13.12.0
+  pullPolicy: IfNotPresent
+
+gitlabUrl: "https://gitlab.example.local/"
+runnerName: "k8s-gitlab-runner"
+runnerTags: "k8s-dind"
+runUntagged: false
+locked: false
+
+
+runnerToken: "<TOKEN>"
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: gitlab-runner
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+job:
+  namespace: "gitlab-runner"
+  image: "docker:27.4.1"
+  serviceImage: "docker:27.4.1-dind"
+  privileged: true
+  pollTimeout: 600
