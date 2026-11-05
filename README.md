@@ -1,4 +1,4 @@
-# Kubernetes Lab
+# DevOps Kubernetes Infrastructure
 
 A 2025/2026 team graduation project by [SSEMI-TRADERS](https://github.com/SSEMI-TRADERS). We built a self-managed MicroK8s cluster that hosted web applications developed by other students for their graduation projects, alongside GitOps, monitoring, and logging services.
 
@@ -28,21 +28,21 @@ I set up MicroK8s on Ubuntu Server, configured Kubernetes Services, MetalLB and 
 
 ## Architecture & Screenshots
 
-![Original diagram showing a client reaching application Pods through an external address, Ingress controller, and Service.](docs/images/graduation-kubernetes-networking.png)
+![Kubernetes networking architecture](docs/images/graduation-kubernetes-networking.png)
 
-*Original Kubernetes networking diagram from the graduation thesis. The lab used MetalLB for the external address.*
+*Kubernetes networking — MetalLB, NGINX Ingress, Services, and Pods.*
 
-![A developer pushes configuration to Git, and Argo CD synchronizes it to Kubernetes.](docs/images/graduation-gitops-flow.png)
+![GitOps workflow](docs/images/graduation-gitops-flow.png)
 
-*GitOps illustration from the graduation defense.*
+*GitOps workflow — Git, Argo CD, and Kubernetes.*
 
-![The school GitLab sign-in page with empty username and password fields.](docs/images/graduation-gitlab-login.png)
+![Self-hosted GitLab](docs/images/graduation-gitlab-login.png)
 
-*GitLab sign-in page from the graduation thesis.*
+*Self-hosted GitLab instance.*
 
-![Argo CD dashboard with application names and Healthy and Synced indicators visible. Private repository values are redacted.](docs/images/argocd-dashboard-2026-redacted.png)
+![Argo CD deployment dashboard](docs/images/argocd-dashboard-2026-redacted.png)
 
-*Historical Argo CD deployment overview — school Kubernetes lab, 2026.*
+*Argo CD deployment status — Synced and Healthy (2026).*
 
 ## Team Credits
 
