@@ -6,7 +6,7 @@ This is a historical school project. The public configurations use placeholders 
 
 ## My Contributions
 
-I'm [Konstantyn Huzil](https://github.com/Kostahe). I set up MicroK8s on Ubuntu Server, configured Kubernetes Services, MetalLB and NGINX Ingress, and organized the platform namespaces. I integrated the infrastructure for the team's services and helped verify deployment status and Ingress access in the lab.
+I set up MicroK8s on Ubuntu Server, configured Kubernetes Services, MetalLB and NGINX Ingress, and organized the platform namespaces. I integrated the infrastructure for the team's services and helped verify deployment status and Ingress access in the lab.
 
 ## Tech Stack
 
@@ -26,14 +26,11 @@ I'm [Konstantyn Huzil](https://github.com/Kostahe). I set up MicroK8s on Ubuntu 
 - [GitLab Ingress example](k8s/apps/gitlab/ingress.yaml)
 - [Argo CD root Application](argocd/root-application.yaml) and [child Applications](argocd/applications/)
 
-## Lab Figures
+## Architecture & Screenshots
 
 ![Original diagram showing a client reaching application Pods through an external address, Ingress controller, and Service.](docs/images/graduation-kubernetes-networking.png)
 
 *Original Kubernetes networking diagram from the graduation thesis. The lab used MetalLB for the external address.*
-
-<details>
-<summary>GitOps illustration and historical screenshots</summary>
 
 ![A developer pushes configuration to Git, and Argo CD synchronizes it to Kubernetes.](docs/images/graduation-gitops-flow.png)
 
@@ -46,8 +43,6 @@ I'm [Konstantyn Huzil](https://github.com/Kostahe). I set up MicroK8s on Ubuntu 
 ![Argo CD dashboard with application names and Healthy and Synced indicators visible. Private repository values are redacted.](docs/images/argocd-dashboard-2026-redacted.png)
 
 *Historical Argo CD deployment overview — school Kubernetes lab, 2026.*
-
-</details>
 
 ## Team Credits
 
