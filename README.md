@@ -1,67 +1,110 @@
-# Kubernetes Lab: Cluster Setup and Service Networking
+# Kubernetes Lab: Cluster Setup and Networking
 
-A team graduation project (2025/2026) that tested whether a self-managed MicroK8s cluster could host several student web applications alongside GitOps, monitoring, and logging services. The project ran as a school lab proof of concept.
+**Engineering case study by [Konstantyn Huzil](https://github.com/Kostahe)**
 
-## My Contribution
+Team graduation project, 2025/2026
 
-I'm [Konstantyn Huzil](https://github.com/Kostahe). I set up the cluster and integrated the infrastructure that the team's services ran on.
+## Project Overview
 
-- Installed MicroK8s on Ubuntu Server, enabled the ingress and storage add-ons, and checked node and system Pod readiness.
-- Configured service networking: internal Kubernetes Services, host-based Ingress, and a shared LoadBalancer Service backed by a MetalLB address pool.
-- Organized platform components and applications into namespaces and prepared the cluster for the team's GitLab, GitOps, monitoring, and logging work.
-- Checked deployment state in Argo CD and verified that selected services were reachable through Ingress during the lab validation.
+Our team built a self-managed MicroK8s lab to test how student web apps could share infrastructure with GitOps, monitoring, and logging services. The cluster hosted web applications developed by other students as part of their graduation projects.
 
-Start with the [LoadBalancer Service](k8s/infra/ingress-lb.yaml), [MetalLB configuration](k8s/infra/metallb-pool.yaml), and [namespace definitions](k8s/infra/bootstrap/namespaces.yaml) to see the infrastructure in the repository.
+**My focus:** I set up MicroK8s and integrated the networking that made selected services reachable on the lab network: Kubernetes Services, MetalLB, and NGINX Ingress.
 
-## Architecture
+[My contributions](#my-contributions) | [Architecture walkthrough](docs/architecture.md) | [Lessons learned](docs/lessons-learned.md)
 
-```text
-Git configuration -> Argo CD root Application -> child Applications -> MicroK8s resources
-Lab client -> MetalLB-backed LoadBalancer Service -> NGINX Ingress -> app Service -> Pod
+## Architecture Diagram
+
+```mermaid
+flowchart TB
+    accTitle: Kubernetes lab architecture
+    accDescr: GitLab provides the desired configuration to Argo CD. Clients enter the MicroK8s cluster through a MetalLB-backed Service and NGINX Ingress. Prometheus and Grafana handle metrics, while Fluent Bit, Elasticsearch, and Kibana form the configured log path.
+    GIT["GitLab<br/>Configuration repository"]
+    CLIENT["Lab client"]
+    subgraph LAB["MicroK8s lab cluster"]
+        ARGO["Argo CD<br/>App of apps"]
+        METAL["MetalLB<br/>L2 address pool"]
+        ENTRY["LoadBalancer Service<br/>TCP 80"]
+        INGRESS["NGINX Ingress<br/>Host and path routing"]
+        APPS["Application Services and Pods"]
+        PROM["Prometheus"]
+        GRAF["Grafana"]
+        FLUENT["Fluent Bit"]
+        ELASTIC["Elasticsearch"]
+        KIBANA["Kibana"]
+        ARGO -. Reconciles .-> APPS
+        METAL -. Allocates LAN address .-> ENTRY
+        ENTRY --> INGRESS --> APPS
+        APPS -->|Selected metrics| PROM --> GRAF
+        APPS -->|Container logs| FLUENT -->|Configured output| ELASTIC --> KIBANA
+    end
+    GIT -->|Desired configuration| ARGO
+    CLIENT -->|HTTP| ENTRY
 ```
 
-| Layer | Tools and purpose |
-| --- | --- |
-| Runtime | MicroK8s runs Kubernetes workloads; a hostpath StorageClass supports lab persistence. |
-| Networking | MetalLB allocates an address for the entry Service. NGINX Ingress routes HTTP requests by hostname and path. |
-| Delivery | Argo CD reconciles Git configuration through an app-of-apps layout. GitLab and a GitLab Runner Helm chart represent the repository and CI/CD components. |
-| Monitoring | Prometheus is configured to scrape metrics; Grafana uses it as a data source. |
-| Logging | Fluent Bit is configured to collect container logs and send them to Elasticsearch for inspection in Kibana. |
+The diagram separates configuration sync from application traffic. GitLab represents the original configuration source; the team also ran a GitLab deployment as a lab trial. The logging arrows show the configured data path. See the [architecture walkthrough](docs/architecture.md) for prerequisites and integration limits.
 
-See the [architecture walkthrough](docs/architecture.md) for the actual resource relationships, metrics and log paths, and setup requirements.
+<details>
+<summary>GitOps illustration from the graduation defense</summary>
+
+![A developer pushes to Git, Argo CD detects the change, and Kubernetes receives the synchronized configuration.](docs/images/graduation-gitops-flow.png)
+
+*Figure from slide 4 of the graduation defense. The original Czech labels describe the GitOps flow.*
+
+</details>
+
+## Tech Stack
+
+| Technology | Role in the lab |
+| --- | --- |
+| **MicroK8s / Kubernetes** | Workload runtime on Ubuntu Server, with namespaces and hostpath storage for lab persistence. |
+| **MetalLB** | Allocates a LAN address for the shared LoadBalancer Service using an L2 address pool. |
+| **NGINX Ingress** | Routes requests by hostname and path to internal Kubernetes Services. |
+| **Argo CD** | Reconciles the Git configuration through a root Application and child Applications. |
+| **GitLab / GitLab Runner / Helm** | Git repository platform and CI/CD components. The snapshot includes a Helm chart for the runner. |
+| **Prometheus / Grafana** | Metrics collection and visualization. |
+| **Fluent Bit / Elasticsearch / Kibana** | Configured pipeline for collecting, indexing, and inspecting container logs. |
+
+## My Contributions
+
+- **Cluster setup:** Installed MicroK8s on Ubuntu Server, enabled ingress and storage add-ons, and checked node and system Pod readiness.
+- **Networking:** Configured internal Services, a shared [LoadBalancer entry point](k8s/infra/ingress-lb.yaml), a [MetalLB address pool and L2 advertisement](k8s/infra/metallb-pool.yaml), and host-based [Ingress routing](k8s/apps/dexd-bazar/app/ingress.yaml).
+- **Infrastructure integration:** Organized [platform namespaces](k8s/infra/bootstrap/namespaces.yaml) and prepared the runtime for the team's GitLab, GitOps, monitoring, logging, and application workloads.
+- **Lab validation:** Checked deployment state in Argo CD and verified that selected services were reachable through Ingress during the original lab session.
 
 ## Historical Validation
 
-The graduation report's validation section and defense presentation document a lab session in which selected applications showed `Synced` and `Healthy` in Argo CD. The report also records successful access to selected services through Ingress. These observations describe the original lab, not a live deployment of this repository. They do not establish uptime, failover, or the success of every service integration.
-
-## Reproduction and Limits
-
-The public snapshot is a reference for a lab rebuild. It assumes a compatible MicroK8s environment, an Ingress controller, MetalLB, Argo CD, storage provisioning, and access to the referenced container images. Replace the example Git URLs, hostnames, and MetalLB address range. Supply the required Kubernetes Secrets separately. The tracked entry Service exposes port 80; TLS settings in individual Ingress resources do not establish an external HTTPS listener.
-
-The [lessons and trade-offs](docs/lessons-learned.md) distinguish what the sources show from what a new deployment would still need to verify.
-
-## Repository Guide
-
-| Path | Contents |
+| Check | What the original lab recorded |
 | --- | --- |
-| [`argocd/`](argocd/) | Root Application and child Application definitions |
-| [`k8s/infra/`](k8s/infra/) | Namespaces, LoadBalancer, MetalLB, storage, and node exporter configuration |
-| [`k8s/apps/`](k8s/apps/) | Platform and student application manifests, including the GitLab Runner chart |
-| [`assets/`](assets/) and [`zdroje/`](zdroje/) | Existing GitLab branding and project reference links |
-| [`docs/`](docs/) | Architecture and lessons from the portfolio review |
+| Argo CD deployment state | Selected applications were `Synced` and `Healthy` at the time of observation. |
+| Ingress reachability | Selected services responded through the configured Ingress routes. |
 
-## Team Credit
+The graduation report (section 3.5) and defense presentation (slide 9) document these point-in-time checks.
 
-The original project was built by [SSEMI-TRADERS](https://github.com/SSEMI-TRADERS). See the [upstream public snapshot](https://github.com/SSEMI-TRADERS/devops-k8s-portfolio).
+![Argo CD dashboard with public application names and the original Healthy and Synced indicators visible. Private repository addresses are redacted.](docs/images/argocd-dashboard-2026-redacted.png)
 
-- [Konstantyn Huzil](https://github.com/Kostahe): MicroK8s cluster setup, networking, Ingress, MetalLB, and infrastructure integration.
-- [Jachym Pantoflicek](https://github.com/jasanjasanjasan): GitLab deployment, persistent storage, and GitOps integration.
-- [Jakub Ryba](https://github.com/KubaCZ007): Argo CD configuration, app-of-apps structure, and environment management.
-- Tomas Mejsnar: Prometheus and Grafana monitoring.
-- [Petr Spor](https://github.com/TheWeth): Elasticsearch, Kibana, and Fluent Bit logging.
+*Historical Argo CD deployment overview — school Kubernetes lab, 2026.*
 
-## Security and Portfolio Scope
+## Technical Documentation
 
-This repository contains a cleaned public version of a school proof-of-concept Kubernetes project. Internal domains, IP addresses, and credentials were replaced with placeholders. The project is not intended to represent production-ready infrastructure.
+- **[Architecture](docs/architecture.md):** GitOps flow, routing from the LAN entry point to application Pods, observability, and lab rebuild prerequisites.
+- **[Lessons and trade-offs](docs/lessons-learned.md):** Shared ingress, bootstrap dependencies, hostpath storage, and what still needs verification.
 
-This case study and its technical documentation were written after graduation. The original thesis, defense deck, and screenshots are excluded. The case study does not change the deployment manifests.
+Start with the [root Application](argocd/root-application.yaml), [infrastructure manifests](k8s/infra/), or [application manifests](k8s/apps/). The existing [branding assets](assets/) and [reference links](zdroje/) are also retained.
+
+## Team Credits
+
+This was a collaborative school project by [SSEMI-TRADERS](https://github.com/SSEMI-TRADERS). The [upstream public snapshot](https://github.com/SSEMI-TRADERS/devops-k8s-portfolio) preserves the team's work.
+
+| Contributor | Responsibility |
+| --- | --- |
+| [Konstantyn Huzil](https://github.com/Kostahe) | MicroK8s setup, Kubernetes networking, Ingress, MetalLB, and infrastructure integration. |
+| [Jachym Pantoflicek](https://github.com/jasanjasanjasan) | GitLab deployment, persistent storage, and GitOps integration. |
+| [Jakub Ryba](https://github.com/KubaCZ007) | Argo CD configuration, app-of-apps structure, and environment management. |
+| Tomas Mejsnar | Prometheus and Grafana monitoring. |
+| [Petr Spor](https://github.com/TheWeth) | Elasticsearch, Kibana, and Fluent Bit logging. |
+
+## Limitations and Security Notes
+
+This public snapshot replaces internal domains, addresses, and credentials with placeholders. A rebuild requires compatible controllers, usable Git and image sources, lab-specific DNS and address ranges, and Secrets supplied outside Git. The tracked entry Service exposes TCP port 80; the Ingress TLS settings alone do not establish external HTTPS.
+
+This was a school proof of concept. The historical checks do not establish production readiness, availability targets, or a successful redeployment of the sanitized snapshot. The case study was written after graduation and leaves the deployment manifests unchanged.
